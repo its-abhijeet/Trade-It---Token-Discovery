@@ -3,7 +3,10 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface WSState {
   connected: boolean;
   lastMessageTs: number | null;
-  deltas: Record<string, { price: number; ts: number }>;
+  deltas: Record<
+    string,
+    { price: number; ts: number; change24h?: number; volume?: number }
+  >;
 }
 
 const initialState: WSState = {
@@ -21,12 +24,24 @@ const websocketSlice = createSlice({
     },
     pushDelta(
       state,
-      action: PayloadAction<{ pair: string; price: number; ts: number }>
+      action: PayloadAction<{
+        pair: string;
+        price: number;
+        ts: number;
+        change24h?: number;
+        volume?: number;
+      }>
     ) {
       state.lastMessageTs = action.payload.ts;
       state.deltas[action.payload.pair] = {
         price: action.payload.price,
         ts: action.payload.ts,
+        ...(action.payload.change24h !== undefined && {
+          change24h: action.payload.change24h,
+        }),
+        ...(action.payload.volume !== undefined && {
+          volume: action.payload.volume,
+        }),
       };
     },
     clearDeltas(state) {

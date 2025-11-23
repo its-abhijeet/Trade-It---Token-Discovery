@@ -44,10 +44,10 @@ const sampleTokens = [
   },
 
   // add many more rows for visual density (copy patterns with varied values)
-  ...Array.from({ length: 12 }).map((_, i) => ({
+  ...Array.from({ length: 40 }).map((_, i) => ({
     pair: `TOK${i + 1}/USDT`,
     price: +(Math.random() * 50).toFixed(6),
-    change24h: +(Math.random() * 20 - 10).toFixed(2),
+    change24h: +(Math.random() * 25 - 10).toFixed(3),
     volume: Math.floor(Math.random() * 30000),
     category: ["new", "final", "migrated"][i % 3],
     logo: "/logo1.png",
@@ -59,7 +59,7 @@ const sampleTokens = [
       owners: Math.floor(Math.random() * 1000),
       paid: Math.random() > 0.5,
     },
-    sparkline: Array.from({ length: 7 }).map(
+    sparkline: Array.from({ length: 10 }).map(
       () => +(Math.random() * 1.5 + 0.5).toFixed(3)
     ),
   })),

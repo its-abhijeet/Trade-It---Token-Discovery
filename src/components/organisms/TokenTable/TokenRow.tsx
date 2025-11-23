@@ -1,100 +1,3 @@
-// // src/components/organisms/TokenTable/TokenRow.tsx
-// "use client";
-// import React, { useEffect, useRef, useState } from "react";
-// import { Token } from "@/services/api";
-// import { useAppSelector } from "@/hooks/useReduxHooks";
-// import Sparkline from "@/components/ui/Sparkline";
-
-// type Props = { token: Token };
-
-// function formatPrice(price: number) {
-//   if (price < 0.0001) return price.toFixed(8);
-//   if (price < 1) return price.toFixed(6);
-//   if (price < 100) return price.toFixed(4);
-//   return price.toFixed(2);
-// }
-
-// export default React.memo(function TokenRow({ token }: Props) {
-//   const deltas = useAppSelector((s) => s.websocket.deltas);
-//   const delta = deltas[token.pair];
-//   const [flash, setFlash] = useState<"up" | "down" | null>(null);
-//   const prevPriceRef = useRef<number | null>(token.price);
-
-//   useEffect(() => {
-//     const newPrice = delta?.price ?? token.price;
-//     const prev = prevPriceRef.current ?? token.price;
-//     if (newPrice > prev) setFlash("up");
-//     else if (newPrice < prev) setFlash("down");
-//     prevPriceRef.current = newPrice;
-//     const t = setTimeout(() => setFlash(null), 700);
-//     return () => clearTimeout(t);
-//   }, [delta, token.price]);
-
-//   const displayPrice = delta?.price ?? token.price;
-
-//   return (
-//     // Use same grid template as header for perfect alignment
-//     <div
-//       className={`token-row grid grid-cols-[1fr_160px_120px_120px] items-center gap-4 transition-colors duration-200 ${
-//         flash === "up"
-//           ? "bg-green-600/8"
-//           : flash === "down"
-//           ? "bg-red-600/8"
-//           : ""
-//       }`}
-//       role="row"
-//       aria-label={`${token.pair} row`}
-//     >
-//       {/* 1st column: logo + pair + meta (left aligned) */}
-//       <div className="flex items-center gap-3">
-//         <img
-//           src={token.logo ?? "/logo1.png"}
-//           alt={`${token.pair} logo`}
-//           className="w-10 h-10 rounded-md object-cover shrink-0"
-//         />
-//         <div className="min-w-0">
-//           <div className="font-semibold text-sm truncate">{token.pair}</div>
-//           <div className="text-muted text-xs truncate">
-//             Liquidity • Marketcap (stub)
-//           </div>
-//         </div>
-//         <div className="pl-2">
-//           <Sparkline
-//             points={token.sparkline ?? []}
-//             width={120}
-//             height={28}
-//             color={token.change24h >= 0 ? "#6ee7b7" : "#f87171"}
-//           />
-//         </div>
-//       </div>
-
-//       {/* 2nd column: Price (right aligned) */}
-//       <div className="flex justify-end items-center">
-//         <div className="font-mono text-sm">{formatPrice(displayPrice)}</div>
-//       </div>
-
-//       {/* 3rd column: 24h change (right aligned) */}
-//       <div className="flex justify-end items-center">
-//         <div
-//           className={`text-sm ${
-//             token.change24h >= 0 ? "text-green-400" : "text-red-400"
-//           }`}
-//         >
-//           {token.change24h >= 0
-//             ? `+${token.change24h}%`
-//             : `${token.change24h}%`}
-//         </div>
-//       </div>
-
-//       {/* 4th column: Volume (right aligned) */}
-//       <div className="flex justify-end items-center">
-//         <div className="text-xs text-muted">{token.volume}</div>
-//       </div>
-//     </div>
-//   );
-// });
-
-// src/components/organisms/TokenTable/TokenRow.tsx
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import { Token } from "@/services/api";
@@ -137,22 +40,152 @@ function InfoChip({
 }
 
 export default React.memo(function TokenRow({ token }: Props) {
+  // websocket deltas store (may include price, change24h, volume)
   const deltas = useAppSelector((s) => s.websocket.deltas);
   const delta = deltas[token.pair];
-  const [flash, setFlash] = useState<"up" | "down" | null>(null);
+
+  // price flash
+  const [priceFlash, setPriceFlash] = useState<"up" | "down" | null>(null);
   const prevPriceRef = useRef<number | null>(token.price);
 
-  useEffect(() => {
-    const newPrice = delta?.price ?? token.price;
-    const prev = prevPriceRef.current ?? token.price;
-    if (newPrice > prev) setFlash("up");
-    else if (newPrice < prev) setFlash("down");
-    prevPriceRef.current = newPrice;
-    const t = setTimeout(() => setFlash(null), 700);
-    return () => clearTimeout(t);
-  }, [delta, token.price]);
+  // change flash
+  const [changeFlash, setChangeFlash] = useState<"up" | "down" | null>(null);
+  const prevChangeRef = useRef<number | null>(token.change24h);
 
-  const displayPrice = delta?.price ?? token.price;
+  // volume flash
+  const [volFlash, setVolFlash] = useState<"up" | "down" | null>(null);
+  const prevVolRef = useRef<number | null>(token.volume);
+
+  // display states (use websocket if provided, otherwise local simulated)
+  const [displayPrice, setDisplayPrice] = useState<number>(token.price);
+  const [displayChange, setDisplayChange] = useState<number>(token.change24h);
+  const [displayVolume, setDisplayVolume] = useState<number>(token.volume);
+
+  // simulation interval refs
+  const simIntervalRef = useRef<number | null>(null);
+
+  // init or update whenever token or delta changes
+  useEffect(() => {
+    // Price - prefer websocket delta.price, else keep current simulation
+    const newPrice = delta?.price ?? displayPrice;
+    // Change - prefer websocket delta.change24h if exists, otherwise derive from relative price change
+    const newChange =
+      typeof delta?.change24h === "number"
+        ? delta.change24h
+        : prevPriceRef.current && newPrice
+        ? ((newPrice - prevPriceRef.current) /
+            Math.max(prevPriceRef.current, 1e-9)) *
+          100
+        : token.change24h ?? 0;
+    // Volume - prefer websocket delta.volume, otherwise small jitter around previous
+    const newVolume =
+      typeof delta?.volume === "number" ? delta.volume : displayVolume;
+
+    // Price flash
+    const prevP = prevPriceRef.current ?? token.price;
+    if (newPrice > prevP) setPriceFlash("up");
+    else if (newPrice < prevP) setPriceFlash("down");
+    if (newPrice !== displayPrice) setDisplayPrice(newPrice);
+    prevPriceRef.current = newPrice;
+    const t1 = setTimeout(() => setPriceFlash(null), 700);
+
+    // Change flash
+    const prevC = prevChangeRef.current ?? token.change24h ?? 0;
+    if (newChange > prevC) setChangeFlash("up");
+    else if (newChange < prevC) setChangeFlash("down");
+    if (newChange !== displayChange) setDisplayChange(Number(newChange));
+    prevChangeRef.current = newChange;
+    const t2 = setTimeout(() => setChangeFlash(null), 700);
+
+    // Volume flash
+    const prevV = prevVolRef.current ?? token.volume;
+    if (newVolume > prevV) setVolFlash("up");
+    else if (newVolume < prevV) setVolFlash("down");
+    if (newVolume !== displayVolume) setDisplayVolume(Number(newVolume));
+    prevVolRef.current = newVolume;
+    const t3 = setTimeout(() => setVolFlash(null), 700);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [delta, token.pair]);
+
+  // If websocket does not provide change24h/volume, run a lightweight local simulation
+  useEffect(() => {
+    // If deltas provide both change24h and volume, no simulation needed
+    const hasRemoteChange = typeof delta?.change24h === "number";
+    const hasRemoteVol = typeof delta?.volume === "number";
+
+    // Only simulate when either not provided
+    if (hasRemoteChange && hasRemoteVol) {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Simulate with small jitter every 700ms
+    if (simIntervalRef.current) {
+      clearInterval(simIntervalRef.current);
+      simIntervalRef.current = null;
+    }
+
+    simIntervalRef.current = window.setInterval(() => {
+      // simulate price jitter if websocket didn't provide price
+      if (!delta?.price) {
+        setDisplayPrice((prev) => {
+          // small percent change random between -0.4% and +0.4%
+          const pct = (Math.random() * 0.8 - 0.4) / 100;
+          const next = +Math.max(prev * (1 + pct), 0.00000001).toFixed(6);
+          // flash handled in effect that watches delta - to fire flash, we update prev refs here manually
+          const prevP = prevPriceRef.current ?? prev;
+          if (next > prevP) setPriceFlash("up");
+          else if (next < prevP) setPriceFlash("down");
+          prevPriceRef.current = next;
+          setTimeout(() => setPriceFlash(null), 700);
+          return next;
+        });
+      }
+
+      // simulate change if not provided
+      if (!hasRemoteChange) {
+        setDisplayChange((prev) => {
+          // derive from last two prices: small random walk around current value
+          const jitter = Math.random() * 0.6 - 0.3;
+          const next = +(prev + jitter).toFixed(2);
+          if (next > prev) setChangeFlash("up");
+          else if (next < prev) setChangeFlash("down");
+          setTimeout(() => setChangeFlash(null), 700);
+          return next;
+        });
+      }
+
+      // simulate volume if not provided
+      if (!hasRemoteVol) {
+        setDisplayVolume((prev) => {
+          // small random +/- up to 6%
+          const change = Math.floor(prev * (Math.random() * 0.12 - 0.06));
+          const next = Math.max(0, prev + change);
+          if (next > prev) setVolFlash("up");
+          else if (next < prev) setVolFlash("down");
+          setTimeout(() => setVolFlash(null), 700);
+          return next;
+        });
+      }
+    }, 700);
+
+    return () => {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [delta?.price, delta?.change24h, delta?.volume]);
 
   // small randomization for token-info to feel alive (based on token name so stable)
   const rand = token.pair.split("").reduce((s, c) => s + c.charCodeAt(0), 0);
@@ -164,9 +197,9 @@ export default React.memo(function TokenRow({ token }: Props) {
     <div
       className={clsx(
         "token-row grid grid-cols-[1fr_160px_120px_120px_200px_96px] items-center gap-4 transition-colors duration-200",
-        flash === "up"
+        priceFlash === "up"
           ? "bg-green-600/6"
-          : flash === "down"
+          : priceFlash === "down"
           ? "bg-red-600/6"
           : "bg-transparent"
       )}
@@ -192,7 +225,9 @@ export default React.memo(function TokenRow({ token }: Props) {
             points={token.sparkline ?? []}
             width={120}
             height={28}
-            color={token.change24h >= 0 ? "#6ee7b7" : "#f87171"}
+            color={token.change24h >= 0 ? "#6EE7B7" : "#F87171"}
+            speed={600}
+            variance={0.06}
           />
         </div>
       </div>
@@ -204,31 +239,50 @@ export default React.memo(function TokenRow({ token }: Props) {
         </div>
       </div>
 
-      {/* 3: change24h */}
+      {/* 3: change24h - animated and fluctuating */}
       <div className="flex justify-end items-center">
         <div
-          className={`text-sm ${
-            token.change24h >= 0 ? "text-green-400" : "text-red-400"
-          }`}
+          className={clsx(
+            "text-sm transition-colors duration-300 font-medium px-2 py-1 rounded",
+            {
+              "text-green-400 bg-green-800/10":
+                displayChange >= 0 && changeFlash === "up",
+              "text-green-300": displayChange >= 0 && changeFlash !== "up",
+              "text-red-400 bg-red-800/10":
+                displayChange < 0 && changeFlash === "down",
+              "text-red-300": displayChange < 0 && changeFlash !== "down",
+            }
+          )}
+          aria-live="polite"
         >
-          {token.change24h >= 0
-            ? `+${token.change24h}%`
-            : `${token.change24h}%`}
+          {displayChange >= 0
+            ? `+${Number(displayChange).toFixed(2)}%`
+            : `${Number(displayChange).toFixed(2)}%`}
         </div>
       </div>
 
-      {/* 4: volume */}
+      {/* 4: volume - animated and fluctuating */}
       <div className="flex justify-end items-center">
-        <div className="text-blue-300 font-extrabold ">{token.volume}</div>
+        <div
+          className={clsx(
+            "text-xs font-extrabold px-2 py-1 rounded transition-transform duration-200",
+            {
+              "scale-105 bg-green-900/6 text-green-300": volFlash === "up",
+              "scale-95 bg-red-900/6 text-red-300": volFlash === "down",
+            }
+          )}
+        >
+          {displayVolume.toLocaleString()}
+        </div>
       </div>
 
       {/* 5: Token Info (chips) */}
       <div className="flex items-center justify-center gap-3">
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
-            <InfoChip tone={token.change24h >= 0 ? "success" : "danger"}>
+            <InfoChip tone={displayChange >= 0 ? "success" : "danger"}>
               <span className="text-xs">
-                {Math.abs(token.change24h).toFixed(2)}%
+                {Math.abs(displayChange).toFixed(2)}%
               </span>
             </InfoChip>
             <InfoChip tone="muted">
