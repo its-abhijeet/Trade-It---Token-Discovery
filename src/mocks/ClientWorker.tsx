@@ -1,24 +1,35 @@
+// src/mocks/ClientWorker.tsx
 "use client";
-import { useEffect, useState } from "react";
-import { worker } from "./browser";
+import { useEffect } from "react";
 
 export default function ClientWorker() {
-  const [started, setStarted] = useState(false);
-
   useEffect(() => {
-    console.log("ClientWorker mount — worker:", worker);
-    if (!worker || process.env.NODE_ENV !== "development") return;
-    worker
-      .start({ onUnhandledRequest: "warn" })
-      .then(() => {
-        console.log("MSW worker started");
-        // set a global flag so other client code can wait for it
-        (window as any).__MSW_STARTED__ = true;
-        setStarted(true);
+    // Only start MSW in development OR when explicitly enabled via env var (e.g. Vercel Preview)
+    const enabled =
+      process.env.NODE_ENV === "development" ||
+      process.env.NEXT_PUBLIC_USE_MSW === "true";
+    if (!enabled) return;
+
+    // Lazy import the browser worker to avoid bundling it into prod client code
+    import("./browser")
+      .then(({ worker }) => {
+        if (!worker) return;
+        return worker.start({
+          onUnhandledRequest: "bypass",
+          // Ensure service worker is registered from the root so scope covers whole app
+          serviceWorker: {
+            url: "/mockServiceWorker.js",
+          },
+        });
       })
-      .catch((e) => {
-        console.error("MSW start error", e);
-        (window as any).__MSW_STARTED__ = false;
+      .then(() => {
+        // helpful flag other parts of your app already check
+        if (typeof window !== "undefined")
+          (window as any).__MSW_STARTED__ = true;
+        console.info("[MSW] worker started");
+      })
+      .catch((err) => {
+        console.warn("[MSW] failed to start", err);
       });
   }, []);
 
