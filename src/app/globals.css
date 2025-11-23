@@ -1,26 +1,321 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+/* @import "tailwindcss/preflight";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities"; */
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* your @theme inline and dark-mode variables below (KEEP THEM) */
+/* @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"); */
+
+/* @custom-variant dark (&:is(.dark *)); */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+.dark {
+  --background: oklch(0.129 0.042 264.695);
+  --foreground: oklch(0.984 0.003 247.858);
+  --card: oklch(0.208 0.042 265.755);
+  --card-foreground: oklch(0.984 0.003 247.858);
+  --popover: oklch(0.208 0.042 265.755);
+  --popover-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.929 0.013 255.508);
+  --primary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.279 0.041 260.031);
+  --secondary-foreground: oklch(0.984 0.003 247.858);
+  --muted: oklch(0.279 0.041 260.031);
+  --muted-foreground: oklch(0.704 0.04 256.788);
+  --accent: oklch(0.279 0.041 260.031);
+  --accent-foreground: oklch(0.984 0.003 247.858);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.551 0.027 264.364);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.208 0.042 265.755);
+  --sidebar-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.279 0.041 260.031);
+  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --bg: #0b0d10;
+  --panel: #0f1418;
+  --muted: #9aa3ad;
+  --accent: #6ee7b7;
+  --danger: #ff6b6b;
+  --card: #0f1720;
+  --row-hover: rgba(255, 255, 255, 0.02);
+  --glass: rgba(255, 255, 255, 0.02);
+  --border: rgba(255, 255, 255, 0.06);
+  --radius: 12px;
+  --max-width: 1200px;
+}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+html,
+body,
+#__next {
+  height: 100%;
+  background: var(--bg);
+  color: #e6edf3;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* utility container */
+.app-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* header */
+.app-header {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  backdrop-filter: blur(6px);
+}
+
+/* main card wrapper for token list */
+.tokens-wrapper {
+  margin-top: 18px;
+  border-radius: var(--radius);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.01),
+    rgba(255, 255, 255, 0.006)
+  );
+  border: 1px solid var(--border);
+  padding: 14px;
+}
+
+/* token row tweaks */
+.token-row {
+  transition: background-color 0.24s ease, transform 0.12s ease;
+  border-radius: 10px;
+  padding: 12px;
+}
+.token-row:hover {
+  background: var(--row-hover);
+  transform: translateY(-1px);
+}
+
+/* column header styles */
+.table-headers {
+  color: #cbd5e1;
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* small muted text */
+.text-muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* adjust scrollbar for table container */
+.tokens-scroll {
+  max-height: calc(100vh - 200px);
+  overflow: auto;
+  padding-right: 6px;
+}
+.tokens-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.tokens-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+/* responsive fix for mobile */
+@media (max-width: 640px) {
+  .app-container {
+    padding: 12px;
+  }
+  .tokens-wrapper {
+    padding: 10px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Sticky footer - style and behavior */
+.sticky-footer-wrapper {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 10px; /* slight lift from absolute bottom for nicer UI */
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* allow clicks only on inner bar */
+}
+
+.sticky-footer {
+  pointer-events: auto;
+  width: calc(100% - 48px);
+  max-width: var(--max-width);
+  padding: 8px 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 17, 20, 0.9),
+    rgba(10, 12, 14, 0.85)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+  align-items: center;
+}
+
+/* icon row */
+.footer-icons-row {
+  gap: 8px;
+}
+
+/* hide default scrollbar but keep scroll functionality */
+.no-scrollbar {
+  scrollbar-width: none; /* firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* icon hover animation is handled via IconButton, but add a small lift on the whole footer on hover */
+.sticky-footer:hover {
+  transform: translateY(-2px);
+  transition: transform 0.18s ease;
+}
+
+/* subtle pulse for active connection indicator (green if connected) */
+.connection-pill {
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* small responsive adjustments */
+@media (max-width: 640px) {
+  .sticky-footer {
+    width: calc(100% - 24px);
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+  .sticky-footer-wrapper {
+    bottom: 6px;
+  }
+  .footer-icons-row {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* Token info chips */
+.token-row .info-chip,
+.token-row .info-chip * {
+  box-sizing: border-box;
+}
+
+/* If you want to use a specific class for chips via InfoChip component */
+.info-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* hover highlight for row */
+.token-row:hover {
+  transform: translateY(-2px);
+  transition: transform 0.12s ease, background-color 0.18s ease;
+}
+
+/* subtle entry animation for info chips */
+.token-row .info-chip {
+  transition: transform 0.18s ease, opacity 0.2s ease;
+}
+.token-row .info-chip:hover {
+  transform: translateY(-2px);
+}
+
+/* ensure the info column content wraps in two rows neatly */
+.token-row > div:nth-child(5) {
+  min-width: 0;
+}
+
+/* action menu animation */
+.relative > div[role="menu"] {
+  animation: fadeInUp 160ms ease;
+}
+@keyframes fadeInUp {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
